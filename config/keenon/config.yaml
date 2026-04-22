@@ -1,0 +1,48 @@
+# Keenon Robotics Fleet Configuration
+# Connects via Keenon Cloud Platform API
+
+vendor: keenon
+api_base_url: https://api.keenon.com/v1
+api_key: ""
+api_secret: ""
+
+robots:
+  keenon_w3_01:
+    model: W3
+    type: delivery
+    capabilities: [navigate, deliver, elevator, multi_floor, contactless]
+    initial_map: "floor_1"
+    charging_station: "charger_04"
+    load_capacity_kg: 20
+    battery_hours: 12
+
+  keenon_s100_01:
+    model: S100
+    type: logistics
+    capabilities: [navigate, deliver, heavy_load, elevator]
+    initial_map: "floor_1"
+    charging_station: "charger_05"
+    load_capacity_kg: 100
+
+  keenon_s400_01:
+    model: S400
+    type: logistics
+    capabilities: [navigate, deliver, heavy_load, elevator, outdoor]
+    initial_map: "floor_1"
+    charging_station: "charger_06"
+    load_capacity_kg: 400
+
+  keenon_c30_01:
+    model: C30
+    type: cleaning
+    capabilities: [navigate, sweep, vacuum, mop]
+    initial_map: "floor_1"
+    charging_station: "charger_07"
+
+  keenon_c40_01:
+    model: C40
+    type: cleaning
+    capabilities: [navigate, sweep, vacuum, mop, scrub]
+    initial_map: "floor_1"
+    charging_station: "charger_08"
+    cleaning_area_sqm: 1100

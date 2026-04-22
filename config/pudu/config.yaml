@@ -1,0 +1,31 @@
+# Pudu Robotics Fleet Configuration
+# Connects via Pudu Open Platform API (https://open.pudutech.com)
+
+vendor: pudu
+api_base_url: https://open.pudutech.com/api/v1
+device_id: ""       # From Pudu developer portal
+device_secret: ""   # From Pudu developer portal
+
+robots:
+  pudu_t300_01:
+    model: T300
+    type: delivery
+    capabilities: [navigate, deliver, elevator, multi_floor]
+    initial_map: "floor_1"
+    charging_station: "charger_01"
+
+  pudu_mt1_01:
+    model: MT1
+    type: cleaning
+    capabilities: [navigate, sweep, mop, vacuum, auto_recharge]
+    initial_map: "floor_1"
+    charging_station: "charger_02"
+    cleaning_area_sqm: 100000
+
+  pudu_cc1_01:
+    model: CC1
+    type: cleaning
+    capabilities: [navigate, sweep, vacuum, mop, scrub]
+    initial_map: "floor_1"
+    charging_station: "charger_03"
+    cleaning_area_sqm: 1800
