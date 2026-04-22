@@ -3,24 +3,24 @@ import { useFleet } from '../contexts/FleetContext';
 import { createOrder, startJob, cancelJob } from '../services/api';
 import {
   Plus, Play, XCircle, ClipboardList, Truck, Sparkles,
-  Navigation, Package, Trash2
+  Navigation, Package, Loader2, X, ChevronDown
 } from 'lucide-react';
 
-const orderKeywords = [
-  { value: 'TRANSPORT', label: 'Transport', icon: Truck, desc: 'Pickup and deliver between locations' },
-  { value: 'MOVE', label: 'Move', icon: Navigation, desc: 'Navigate to a location' },
-  { value: 'DELIVER', label: 'Deliver', icon: Package, desc: 'Pick up and deliver items' },
-  { value: 'CLEAN', label: 'Clean', icon: Sparkles, desc: 'Clean a designated zone' },
+const orderTypes = [
+  { value: 'TRANSPORT', label: 'Transport', icon: Truck, color: 'border-blue-500/30 bg-blue-500/10 text-blue-400', desc: 'Pickup & deliver' },
+  { value: 'MOVE', label: 'Move', icon: Navigation, color: 'border-green-500/30 bg-green-500/10 text-green-400', desc: 'Go to location' },
+  { value: 'DELIVER', label: 'Deliver', icon: Package, color: 'border-purple-500/30 bg-purple-500/10 text-purple-400', desc: 'Pick up & drop off' },
+  { value: 'CLEAN', label: 'Clean', icon: Sparkles, color: 'border-amber-500/30 bg-amber-500/10 text-amber-400', desc: 'Clean a zone' },
 ];
 
-const jobStatusColors: Record<string, string> = {
-  pending: 'bg-gray-500/20 text-gray-400',
-  planned: 'bg-cyan-500/20 text-cyan-400',
-  allocated: 'bg-purple-500/20 text-purple-400',
-  active: 'bg-blue-500/20 text-blue-400',
-  completed: 'bg-green-500/20 text-green-400',
-  failed: 'bg-red-500/20 text-red-400',
-  cancelled: 'bg-gray-500/20 text-gray-500',
+const jobColors: Record<string, string> = {
+  pending: 'bg-gray-500/15 text-gray-400',
+  planned: 'bg-cyan-500/15 text-cyan-400',
+  allocated: 'bg-purple-500/15 text-purple-400',
+  active: 'bg-blue-500/15 text-blue-400',
+  completed: 'bg-green-500/15 text-green-400',
+  failed: 'bg-red-500/15 text-red-400',
+  cancelled: 'bg-gray-500/15 text-gray-600',
 };
 
 export default function JobsPage() {
@@ -31,12 +31,12 @@ export default function JobsPage() {
   const [arg2, setArg2] = useState('');
   const [priority, setPriority] = useState(2);
   const [submitting, setSubmitting] = useState(false);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   const handleCreate = async () => {
     setSubmitting(true);
     try {
-      const args = [arg1, arg2].filter(Boolean);
-      await createOrder({ keyword, priority, args });
+      await createOrder({ keyword, priority, args: [arg1, arg2].filter(Boolean) });
       setShowCreate(false);
       setArg1('');
       setArg2('');
@@ -48,66 +48,61 @@ export default function JobsPage() {
   };
 
   const handleStart = async (jobId: number) => {
-    try {
-      await startJob(jobId);
-      refresh();
-    } catch (e) {
-      console.error(e);
-    }
+    setActionLoading(jobId);
+    try { await startJob(jobId); refresh(); } catch {}
+    setActionLoading(null);
   };
 
   const handleCancel = async (jobId: number) => {
-    try {
-      await cancelJob(jobId);
-      refresh();
-    } catch (e) {
-      console.error(e);
-    }
+    setActionLoading(jobId);
+    try { await cancelJob(jobId); refresh(); } catch {}
+    setActionLoading(null);
   };
 
   const jobs = data?.active_jobs || [];
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-8 max-w-3xl mx-auto">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
         <div>
-          <h2 className="text-2xl font-bold">Jobs</h2>
-          <p className="text-gray-400 text-sm mt-1">Create and manage fleet jobs</p>
+          <h2 className="text-xl sm:text-2xl font-bold">Jobs</h2>
+          <p className="text-gray-500 text-[11px] sm:text-sm mt-0.5">Create and manage fleet jobs</p>
         </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-700"
+          className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 rounded-xl text-xs sm:text-sm font-medium hover:bg-blue-700 active:scale-95 transition-all"
         >
-          <Plus className="w-4 h-4" /> New Order
+          {showCreate ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          <span className="hidden xs:inline">{showCreate ? 'Close' : 'New Order'}</span>
         </button>
       </div>
 
-      {/* Create Order Form */}
+      {/* Create Order Sheet */}
       {showCreate && (
-        <div className="bg-gray-900 rounded-xl border border-gray-800 p-6 mb-6">
-          <h3 className="text-lg font-semibold mb-4">Create Quick Order</h3>
+        <div className="bg-gray-900 rounded-2xl border border-gray-800 p-4 sm:p-6 mb-5 animate-slide-up">
+          <h3 className="text-base font-semibold mb-4">Create Quick Order</h3>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            {orderKeywords.map((ok) => (
+          {/* Order type selector */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+            {orderTypes.map((ot) => (
               <button
-                key={ok.value}
-                onClick={() => setKeyword(ok.value)}
-                className={`p-3 rounded-lg border text-left ${
-                  keyword === ok.value
-                    ? 'border-blue-500 bg-blue-500/10'
-                    : 'border-gray-700 hover:border-gray-600'
+                key={ot.value}
+                onClick={() => setKeyword(ot.value)}
+                className={`p-3 rounded-xl border text-left transition-all active:scale-95 ${
+                  keyword === ot.value ? ot.color : 'border-gray-700 bg-gray-800/30'
                 }`}
               >
-                <ok.icon className="w-5 h-5 mb-1" />
-                <p className="text-sm font-medium">{ok.label}</p>
-                <p className="text-xs text-gray-500">{ok.desc}</p>
+                <ot.icon className="w-5 h-5 mb-1.5" />
+                <p className="text-xs font-semibold">{ot.label}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">{ot.desc}</p>
               </button>
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          {/* Input fields */}
+          <div className="space-y-3 mb-4">
             <div>
-              <label className="block text-xs text-gray-400 mb-1">
+              <label className="block text-[10px] text-gray-500 uppercase mb-1">
                 {keyword === 'CLEAN' ? 'Zone ID' : 'From / Location'}
               </label>
               <input
@@ -115,119 +110,133 @@ export default function JobsPage() {
                 value={arg1}
                 onChange={(e) => setArg1(e.target.value)}
                 placeholder="e.g. lobby, room_101, zone_a"
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                className="w-full px-3.5 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
               />
             </div>
+
             {['TRANSPORT', 'DELIVER'].includes(keyword) && (
               <div>
-                <label className="block text-xs text-gray-400 mb-1">To / Destination</label>
+                <label className="block text-[10px] text-gray-500 uppercase mb-1">To / Destination</label>
                 <input
                   type="text"
                   value={arg2}
                   onChange={(e) => setArg2(e.target.value)}
                   placeholder="e.g. kitchen, room_202"
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full px-3.5 py-2.5 bg-gray-800 border border-gray-700 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 transition-all"
                 />
               </div>
             )}
+
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Priority</label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm focus:outline-none focus:border-blue-500"
-              >
-                <option value={1}>Low</option>
-                <option value={2}>Medium</option>
-                <option value={3}>High</option>
-                <option value={4}>Critical</option>
-              </select>
+              <label className="block text-[10px] text-gray-500 uppercase mb-1">Priority</label>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { v: 1, l: 'Low', c: 'border-gray-600 text-gray-400' },
+                  { v: 2, l: 'Medium', c: 'border-blue-500/30 text-blue-400' },
+                  { v: 3, l: 'High', c: 'border-amber-500/30 text-amber-400' },
+                  { v: 4, l: 'Critical', c: 'border-red-500/30 text-red-400' },
+                ].map(({ v, l, c }) => (
+                  <button
+                    key={v}
+                    onClick={() => setPriority(v)}
+                    className={`py-2 rounded-xl text-[11px] font-medium border transition-all active:scale-95 ${
+                      priority === v ? c + ' bg-gray-800' : 'border-gray-700 text-gray-500'
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <button
-              onClick={handleCreate}
-              disabled={submitting || !arg1}
-              className="px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-            >
-              {submitting ? 'Creating...' : 'Create Order'}
-            </button>
-            <button
-              onClick={() => setShowCreate(false)}
-              className="px-4 py-2 bg-gray-800 rounded-lg text-sm hover:bg-gray-700"
-            >
-              Cancel
-            </button>
-          </div>
+          {/* Submit */}
+          <button
+            onClick={handleCreate}
+            disabled={submitting || !arg1}
+            className="w-full py-3 bg-blue-600 rounded-xl text-sm font-semibold hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-40 disabled:active:scale-100"
+          >
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" /> Creating...
+              </span>
+            ) : (
+              `Create ${keyword} Order`
+            )}
+          </button>
         </div>
       )}
 
       {/* Jobs List */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {jobs.length === 0 ? (
-          <div className="bg-gray-900 rounded-xl border border-gray-800 p-12 text-center">
-            <ClipboardList className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-500">No jobs yet. Create an order to get started.</p>
+          <div className="bg-gray-900 rounded-2xl border border-gray-800 py-16 text-center">
+            <ClipboardList className="w-12 h-12 text-gray-700 mx-auto mb-3" />
+            <p className="text-gray-600 text-sm">No jobs yet</p>
+            <p className="text-gray-700 text-xs mt-1">Create an order to get started</p>
           </div>
         ) : (
           jobs.map((job) => (
-            <div key={job.id} className="bg-gray-900 rounded-xl border border-gray-800 p-5">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-lg font-semibold">#{job.id}</span>
-                  <span className="font-medium">{job.name}</span>
-                  {job.order_keyword && (
-                    <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-300">
-                      {job.order_keyword}
-                    </span>
-                  )}
+            <div key={job.id} className="bg-gray-900 rounded-2xl border border-gray-800 p-4 sm:p-5">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-base font-bold text-gray-300">#{job.id}</span>
+                    <span className="text-sm font-medium truncate">{job.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    {job.order_keyword && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-lg bg-gray-800 text-gray-400">{job.order_keyword}</span>
+                    )}
+                    <span className="text-[9px] text-gray-600">{job.planning_strategy} / {job.allocation_strategy}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${jobStatusColors[job.status]}`}>
-                    {job.status}
-                  </span>
-                  {['planned', 'allocated'].includes(job.status) && (
-                    <button
-                      onClick={() => handleStart(job.id)}
-                      className="flex items-center gap-1 px-3 py-1 text-xs bg-green-500/20 text-green-400 rounded-lg hover:bg-green-500/30"
-                    >
-                      <Play className="w-3 h-3" /> Start
-                    </button>
-                  )}
-                  {['active', 'allocated', 'planned'].includes(job.status) && (
-                    <button
-                      onClick={() => handleCancel(job.id)}
-                      className="flex items-center gap-1 px-3 py-1 text-xs bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30"
-                    >
-                      <XCircle className="w-3 h-3" /> Cancel
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-6 text-xs text-gray-400 mb-2">
-                <span>Strategy: {job.planning_strategy}</span>
-                <span>Allocation: {job.allocation_strategy}</span>
-                <span>Priority: {['', 'Low', 'Medium', 'High', 'Critical'][job.priority]}</span>
-                <span>Robots: {job.assigned_robot_ids?.join(', ') || 'None'}</span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      job.status === 'completed' ? 'bg-green-500' :
-                      job.status === 'failed' ? 'bg-red-500' : 'bg-blue-500'
-                    }`}
-                    style={{
-                      width: `${job.total_tasks > 0 ? (job.completed_tasks / job.total_tasks) * 100 : 0}%`,
-                    }}
-                  />
-                </div>
-                <span className="text-xs text-gray-400 whitespace-nowrap">
-                  {job.completed_tasks}/{job.total_tasks} tasks
+                <span className={`text-[10px] font-medium px-2.5 py-1 rounded-full flex-shrink-0 ml-2 ${jobColors[job.status]}`}>
+                  {job.status}
                 </span>
+              </div>
+
+              {/* Details */}
+              <div className="flex items-center gap-3 text-[10px] text-gray-500 mb-3 flex-wrap">
+                <span>Priority: {['', 'Low', 'Med', 'High', 'Crit'][job.priority]}</span>
+                <span>Robots: {job.assigned_robot_ids?.length || 0}</span>
+                <span>Tasks: {job.completed_tasks}/{job.total_tasks}</span>
+              </div>
+
+              {/* Progress */}
+              <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden mb-3">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${
+                    job.status === 'completed' ? 'bg-green-500' :
+                    job.status === 'failed' ? 'bg-red-500' : 'bg-blue-500'
+                  }`}
+                  style={{ width: `${job.total_tasks > 0 ? (job.completed_tasks / job.total_tasks) * 100 : 0}%` }}
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                {['planned', 'allocated'].includes(job.status) && (
+                  <button
+                    onClick={() => handleStart(job.id)}
+                    disabled={actionLoading === job.id}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl bg-green-500/15 text-green-400 active:bg-green-500/25 transition-all active:scale-95 disabled:opacity-40"
+                  >
+                    {actionLoading === job.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                    Start
+                  </button>
+                )}
+                {['active', 'allocated', 'planned'].includes(job.status) && (
+                  <button
+                    onClick={() => handleCancel(job.id)}
+                    disabled={actionLoading === job.id}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl bg-red-500/15 text-red-400 active:bg-red-500/25 transition-all active:scale-95 disabled:opacity-40"
+                  >
+                    {actionLoading === job.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
+                    Cancel
+                  </button>
+                )}
               </div>
             </div>
           ))
